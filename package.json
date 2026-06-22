@@ -1,0 +1,13 @@
+{
+  "name": "xiaoqianqian-coach",
+  "version": "1.0.0",
+  "description": "《转念教练·小钱钱》—— 面向新晋管理者，基于《一念之转》的单段引导对话",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "private": true
+}
