@@ -66,14 +66,14 @@ async function handleChat(req, res) {
     return res.end('Invalid JSON');
   }
 
-  const { messages, name } = parsed;
+  const { messages, name, date } = parsed;
   if (!messages || !Array.isArray(messages)) {
     res.writeHead(400, cors());
     return res.end('Missing messages');
   }
 
   const fullMessages = [
-    { role: 'system', content: buildSystemPrompt(name) },
+    { role: 'system', content: buildSystemPrompt(name, date) },
     ...messages,
   ];
 

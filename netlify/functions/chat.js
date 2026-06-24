@@ -14,14 +14,14 @@ exports.handler = async (event) => {
   try { body = JSON.parse(event.body); }
   catch (e) { return { statusCode: 400, body: 'Invalid JSON' }; }
 
-  const { messages, name } = body;
+  const { messages, name, date } = body;
   if (!messages || !Array.isArray(messages)) {
     return { statusCode: 400, body: 'Missing messages' };
   }
 
   // 系统提示词在服务器端注入，前端只发送用户/助手的对话轮次
   const fullMessages = [
-    { role: 'system', content: buildSystemPrompt(name) },
+    { role: 'system', content: buildSystemPrompt(name, date) },
     ...messages,
   ];
 

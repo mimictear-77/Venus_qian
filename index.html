@@ -13,9 +13,10 @@
 
 <style>
 /* ─────────────────────────────────────────
-   转念 · 小钱钱 —— 新晋管理者 / 一念之转
+   转念 · 小钱钱 —— 卡片式弹出对话
+   背景始终保留封面，对话以浮层卡片弹出
+   桌面：居中模态卡片  手机：底部抽屉
    品牌色：白底 + 科技蓝主色 + 金黄强调色
-   思源黑体 / 线性 Material Icons
    ───────────────────────────────────────── */
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -28,7 +29,7 @@
   --r:10px;--rs:6px;
   --ease:cubic-bezier(.4,0,.2,1);
 }
-html,body{min-height:100vh}
+html,body{height:100%;overflow:hidden}
 body{
   font-family:'Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
   font-weight:400;
@@ -38,159 +39,180 @@ body{
 }
 .mi{font-family:'Material Icons Outlined';font-weight:normal;font-style:normal;display:inline-block;line-height:1;text-transform:none;letter-spacing:normal;word-wrap:normal;white-space:nowrap;direction:ltr;font-feature-settings:'liga';-webkit-font-smoothing:antialiased;vertical-align:middle;font-size:inherit}
 
-/* Header */
-.hd{position:fixed;top:0;left:0;right:0;height:60px;background:rgba(255,255,255,.94);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;padding:0 32px;z-index:100;backdrop-filter:saturate(1.3) blur(8px)}
-.logo{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;letter-spacing:.4px;color:var(--ink)}
-.logo img{width:30px;height:30px;object-fit:contain}
-.logo em{color:var(--accent);font-style:normal;font-weight:700}
-.hd-sub{font-size:11px;font-weight:500;color:var(--t4);letter-spacing:1px}
-
-/* Main */
-.main{padding-top:60px;min-height:100vh}
-
 /* Toast */
-.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 22px;border-radius:var(--r);font-size:13px;font-weight:500;opacity:0;transition:opacity .2s var(--ease),transform .2s var(--ease);z-index:200;white-space:nowrap;pointer-events:none;display:flex;align-items:center;gap:8px;box-shadow:0 8px 28px rgba(22,33,58,.22)}
+.toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 22px;border-radius:var(--r);font-size:13px;font-weight:500;opacity:0;transition:opacity .2s var(--ease),transform .2s var(--ease);z-index:300;white-space:nowrap;pointer-events:none;display:flex;align-items:center;gap:8px;box-shadow:0 8px 28px rgba(22,33,58,.22)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 @keyframes fi{from{opacity:0}to{opacity:1}}
 .fi{animation:fi .4s var(--ease)}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 
-/* ─── Cover ─── */
-#sCover{
-  position:fixed;inset:0;z-index:120;
+/* ─── Background scene (始终存在) ─── */
+.bg{
+  position:fixed;inset:0;z-index:1;
   display:flex;flex-direction:column;justify-content:center;
   background:
     radial-gradient(130% 90% at 50% -10%, #DCE8FF 0%, rgba(220,232,255,0) 55%),
     linear-gradient(180deg,#F6F9FF 0%,#EAF1FE 58%,#E2ECFD 100%);
-  animation:fi 1s var(--ease);
   overflow:hidden;
+  transition:filter .45s var(--ease),transform .45s var(--ease);
 }
+.bg.dim{filter:blur(8px) saturate(1.08);transform:scale(1.03)}
 .cover-glow{position:absolute;width:520px;height:520px;border-radius:50%;
   background:radial-gradient(circle,rgba(43,102,246,.16) 0%,rgba(43,102,246,0) 70%);
   top:-120px;right:-120px;pointer-events:none}
 .cover-glow.g2{background:radial-gradient(circle,rgba(245,166,35,.16) 0%,rgba(245,166,35,0) 70%);
   top:auto;bottom:-160px;left:-140px;right:auto}
 .cover-box{text-align:center;padding:0 32px;max-width:720px;margin:0 auto;width:100%;position:relative;z-index:2;
-  animation:su .8s var(--ease) .2s both}
+  animation:su .8s var(--ease) .15s both}
 @keyframes su{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.cover-hero{width:172px;height:172px;object-fit:contain;margin:0 auto 14px;display:block;
+.cover-hero{width:168px;height:168px;object-fit:contain;margin:0 auto 14px;display:block;
   filter:drop-shadow(0 18px 30px rgba(43,102,246,.22));animation:float 5s var(--ease) infinite}
 .cover-en{font-size:11px;letter-spacing:6px;font-weight:700;color:var(--accent);margin-bottom:22px;text-transform:uppercase}
-.cover-title{font-size:60px;font-weight:900;color:var(--ink);letter-spacing:6px;line-height:1.1;margin-bottom:22px}
+.cover-title{font-size:58px;font-weight:900;color:var(--ink);letter-spacing:6px;line-height:1.1;margin-bottom:22px}
 .cover-title em{font-style:normal;color:var(--accent)}
-.cover-sub{font-size:15.5px;color:var(--t2);margin-bottom:42px;line-height:2;letter-spacing:.4px}
+.cover-sub{font-size:15px;color:var(--t2);margin-bottom:40px;line-height:2;letter-spacing:.4px}
 .btn-enter{display:inline-flex;align-items:center;gap:10px;padding:16px 40px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:1px;transition:background .2s var(--ease),transform .15s,box-shadow .2s;box-shadow:0 10px 26px rgba(43,102,246,.32)}
 .btn-enter:hover{background:var(--accent-d);transform:translateY(-2px);box-shadow:0 14px 32px rgba(43,102,246,.4)}
 .btn-enter .mi{font-size:18px}
 
-/* Setup */
-.setup{max-width:560px;margin:0 auto;padding:96px 32px 64px;position:relative}
-.setup-hero{width:96px;height:96px;object-fit:contain;margin-bottom:18px;filter:drop-shadow(0 10px 18px rgba(43,102,246,.2))}
-.eyebrow{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:20px;display:inline-flex;align-items:center;gap:10px}
-.eyebrow::before{content:'';width:24px;height:2px;background:var(--gold);display:inline-block}
-.setup h1{font-size:46px;font-weight:900;letter-spacing:-1px;line-height:1.14;margin-bottom:20px;color:var(--ink)}
-.setup>p{font-size:16px;color:var(--t2);line-height:1.85;margin-bottom:40px;max-width:480px}
-.fg{margin-bottom:24px}
+/* ─── Backdrop ─── */
+.backdrop{position:fixed;inset:0;z-index:10;background:rgba(16,33,80,.32);animation:fi .3s var(--ease)}
+
+/* ─── Card / Sheet ─── */
+.sheet{
+  position:fixed;z-index:20;
+  left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(480px,92vw);
+  background:#fff;border-radius:20px;
+  box-shadow:0 30px 80px rgba(16,33,80,.34);
+  display:flex;flex-direction:column;overflow:hidden;
+  animation:pop .34s var(--ease);
+}
+.sheet.setup{max-height:88vh}
+.sheet.chat{height:min(660px,86vh)}
+@keyframes pop{from{opacity:0;transform:translate(-50%,-46%) scale(.96)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+
+/* Card head */
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 14px 18px;border-bottom:1px solid var(--bd);flex-shrink:0;background:rgba(255,255,255,.96)}
+.ch-id{display:flex;align-items:center;gap:11px}
+.ch-id img{width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 4px 8px rgba(43,102,246,.2))}
+.ch-name{font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:.3px}
+.ch-name em{font-style:normal;color:var(--accent)}
+.ch-sub{font-size:11px;color:var(--t4);margin-top:2px;letter-spacing:.5px}
+.ch-close{width:34px;height:34px;border:none;background:var(--bg2);color:var(--t3);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
+.ch-close:hover{background:var(--bg3);color:var(--ink)}
+.ch-close .mi{font-size:20px}
+
+/* Card body (scroll area) */
+.card-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.card-body::-webkit-scrollbar{width:7px}
+.card-body::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:4px}
+
+/* ── Setup inside card ── */
+.setup-body{padding:30px 26px 28px}
+.eyebrow{font-size:11.5px;font-weight:700;color:var(--accent);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:16px;display:inline-flex;align-items:center;gap:9px}
+.eyebrow::before{content:'';width:22px;height:2px;background:var(--gold);display:inline-block}
+.setup-body h1{font-size:30px;font-weight:900;letter-spacing:-.5px;line-height:1.2;margin-bottom:16px;color:var(--ink)}
+.setup-body>p{font-size:14.5px;color:var(--t2);line-height:1.85;margin-bottom:26px}
 .fl{display:block;font-size:12px;font-weight:600;margin-bottom:8px;color:var(--t2);letter-spacing:.6px;text-transform:uppercase}
 .fi-input{width:100%;padding:14px 16px;border:1.5px solid var(--bd2);border-radius:var(--r);font-size:16px;font-family:inherit;color:var(--ink);background:var(--bg2);transition:border-color .2s var(--ease),background .2s;outline:none;font-weight:500}
 .fi-input:hover{border-color:var(--t3)}
 .fi-input:focus{border-color:var(--accent);background:#fff}
 .fi-input::placeholder{color:var(--t4);font-weight:400}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px 20px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-size:14.5px;font-weight:700;cursor:pointer;transition:background .2s var(--ease),opacity .2s;font-family:inherit;margin-top:12px;letter-spacing:.5px;box-shadow:0 8px 22px rgba(43,102,246,.28)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:15px 20px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-size:14.5px;font-weight:700;cursor:pointer;transition:background .2s var(--ease),opacity .2s;font-family:inherit;margin-top:16px;letter-spacing:.5px;box-shadow:0 8px 22px rgba(43,102,246,.26)}
 .btn:hover{background:var(--accent-d)}
-.btn:disabled{opacity:.3;cursor:not-allowed}
 .btn .mi{font-size:18px}
-.adv-t{font-size:13px;color:var(--t3);cursor:pointer;text-align:center;margin-top:24px;padding:8px;transition:color .15s;display:inline-flex;align-items:center;gap:6px;justify-content:center;width:100%}
+.adv-t{font-size:12.5px;color:var(--t3);cursor:pointer;text-align:center;margin-top:18px;padding:6px;transition:color .15s;display:inline-flex;align-items:center;gap:6px;justify-content:center;width:100%}
 .adv-t:hover{color:var(--accent)}
-.adv-p{display:none;margin-top:16px;padding:22px;background:var(--bg2);border-radius:var(--r);border:1px solid var(--bd)}
+.adv-p{display:none;margin-top:14px;padding:18px;background:var(--bg2);border-radius:var(--r);border:1px solid var(--bd)}
 .adv-p.open{display:block;animation:fi .25s var(--ease)}
-.info-card{font-size:13px;color:var(--t2);line-height:1.9}
-.info-card .info-t{display:block;font-size:11px;font-weight:700;color:var(--ink);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
+.info-card{font-size:12.5px;color:var(--t2);line-height:1.9}
+.info-card .info-t{display:block;font-size:11px;font-weight:700;color:var(--ink);letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px}
 .info-card em{color:var(--accent);font-style:normal;font-weight:600}
 
-/* Chat */
-.chat{max-width:700px;margin:0 auto;padding:48px 32px 172px}
-.sh{margin-bottom:36px;display:flex;align-items:center;gap:16px}
-.sh-ava{width:52px;height:52px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 6px 12px rgba(43,102,246,.18))}
-.st{font-size:27px;font-weight:900;letter-spacing:-.5px;line-height:1.2;color:var(--ink)}
-.sd2{font-size:14px;color:var(--t2);margin-top:8px;line-height:1.7;max-width:520px}
-
-/* Messages */
-.msgs{display:flex;flex-direction:column;gap:22px}
-.msg{display:flex;gap:13px;animation:fi .35s var(--ease)}
+/* ── Chat inside card ── */
+.msgs{display:flex;flex-direction:column;gap:18px;padding:24px 20px 8px}
+.msg{display:flex;gap:11px}
+.msg.enter{animation:su2 .34s var(--ease)}
+@keyframes su2{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .msg.u{flex-direction:row-reverse}
-.av{width:36px;height:36px;border-radius:50%;background:var(--accent-soft);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600;color:var(--accent);overflow:hidden}
+.av{width:34px;height:34px;border-radius:50%;background:var(--accent-soft);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600;color:var(--accent);overflow:hidden;font-size:14px}
 .av img{width:100%;height:100%;object-fit:cover}
-.msg.u .av{background:var(--ink);color:#fff;border-color:var(--ink);font-size:14px}
-.bub{max-width:80%;padding:14px 18px;border-radius:12px;font-size:15px;line-height:1.78}
-.msg.ai .bub{background:var(--bg2);color:var(--ink);border:1px solid var(--bd)}
-.msg.u .bub{background:var(--accent);color:#fff}
-
-/* Archive bubble */
-.msg.archive .bub{background:#fff;border:1px solid var(--bd2);border-top:3px solid var(--gold);max-width:100%;padding:26px 30px;border-radius:var(--r);box-shadow:0 10px 30px rgba(22,33,58,.07)}
-.bub .rs-hr{border:none;border-top:1px solid var(--bd);margin:14px 0}
-
-/* Loading */
-.ld{display:flex;gap:5px;padding:15px 18px;background:var(--bg2);border:1px solid var(--bd);border-radius:12px;width:fit-content}
-.ld-d{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:bounce 1.4s infinite}
-.ld-d:nth-child(2){animation-delay:.18s}.ld-d:nth-child(3){animation-delay:.36s}
-@keyframes bounce{0%,80%,100%{opacity:.3}40%{opacity:1}}
-
-/* Input area */
-.ia{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);border-top:1px solid var(--bd);padding:16px 32px;backdrop-filter:saturate(1.3) blur(8px)}
-.ic{max-width:700px;margin:0 auto;display:flex;gap:12px;align-items:flex-end}
-.ci{flex:1;padding:13px 16px;border:1.5px solid var(--bd2);border-radius:var(--r);font-size:15px;font-family:inherit;color:var(--ink);background:var(--bg);resize:none;outline:none;min-height:48px;max-height:140px;line-height:1.55;transition:border-color .15s var(--ease)}
-.ci:hover{border-color:var(--t3)}
-.ci:focus{border-color:var(--accent)}
-.sb{width:48px;height:48px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s var(--ease)}
-.sb:hover{background:var(--accent-d)}
-.sb:disabled{opacity:.35;cursor:not-allowed;background:var(--t4)}
-.sb .mi{font-size:20px}
-
-/* End / action bar */
-.endbar{max-width:700px;margin:36px auto 0;padding-top:28px;border-top:1px solid var(--bd);text-align:center}
-.endbar .ehint{font-size:13.5px;color:var(--t3);line-height:1.7;margin-bottom:20px}
-.act{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-.btn2{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;background:#fff;color:var(--ink);border:1.5px solid var(--bd2);border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s var(--ease)}
-.btn2:hover{border-color:var(--accent);background:var(--bg2)}
-.btn2 .mi{font-size:16px;color:var(--accent)}
-.btn3{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;background:var(--gold);color:#5A3B00;border:none;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:filter .15s var(--ease)}
-.btn3:hover{filter:brightness(1.05)}
-.btn3 .mi{font-size:16px}
-
-/* Paragraph rhythm + highlight */
-.bub p{margin:0 0 12px}
-.bub p:last-child{margin-bottom:0}
+.msg.u .av{background:var(--ink);color:#fff;border-color:var(--ink)}
+.bub{max-width:78%;padding:13px 16px;border-radius:13px;font-size:14.5px;line-height:1.75}
+.msg.ai .bub{background:var(--bg2);color:var(--ink);border:1px solid var(--bd);border-top-left-radius:4px}
+.msg.u .bub{background:var(--accent);color:#fff;border-top-right-radius:4px}
+.msg.archive .bub{background:#fff;border:1px solid var(--bd2);border-top:3px solid var(--gold);max-width:100%;padding:22px 22px;border-radius:var(--r);box-shadow:0 8px 24px rgba(22,33,58,.07)}
+.bub .rs-hr{border:none;border-top:1px solid var(--bd);margin:13px 0}
+.bub p{margin:0 0 11px}.bub p:last-child{margin-bottom:0}
 .hl{color:var(--accent);font-weight:700}
 .msg.u .bub .hl{color:#fff}
 .msg.archive .bub strong{color:var(--ink)}
 
-/* Mobile */
+/* Loading */
+.ld{display:flex;gap:5px;padding:14px 16px;background:var(--bg2);border:1px solid var(--bd);border-radius:13px;border-top-left-radius:4px;width:fit-content}
+.ld-d{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:bounce 1.4s infinite}
+.ld-d:nth-child(2){animation-delay:.18s}.ld-d:nth-child(3){animation-delay:.36s}
+@keyframes bounce{0%,80%,100%{opacity:.3}40%{opacity:1}}
+
+/* End / action bar */
+.endbar{margin:18px 20px 22px;padding-top:20px;border-top:1px solid var(--bd);text-align:center}
+.endbar .ehint{font-size:13px;color:var(--t3);line-height:1.7;margin-bottom:16px}
+.act{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn2{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;background:#fff;color:var(--ink);border:1.5px solid var(--bd2);border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s var(--ease)}
+.btn2:hover{border-color:var(--accent);background:var(--bg2)}
+.btn2 .mi{font-size:16px;color:var(--accent)}
+.btn3{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;background:var(--gold);color:#5A3B00;border:none;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:filter .15s var(--ease)}
+.btn3:hover{filter:brightness(1.05)}
+.btn3 .mi{font-size:16px}
+
+/* Card foot (input) */
+.card-foot{flex-shrink:0;border-top:1px solid var(--bd);padding:12px 14px;background:rgba(255,255,255,.97)}
+.ic{display:flex;gap:10px;align-items:flex-end}
+.ci{flex:1;padding:12px 14px;border:1.5px solid var(--bd2);border-radius:var(--r);font-size:15px;font-family:inherit;color:var(--ink);background:var(--bg);resize:none;outline:none;min-height:46px;max-height:120px;line-height:1.5;transition:border-color .15s var(--ease)}
+.ci:hover{border-color:var(--t3)}
+.ci:focus{border-color:var(--accent)}
+.sb{width:46px;height:46px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s var(--ease)}
+.sb:hover{background:var(--accent-d)}
+.sb:disabled{opacity:.35;cursor:not-allowed;background:var(--t4)}
+.sb .mi{font-size:20px}
+
+/* ─── Mobile：底部抽屉 ─── */
 @media(max-width:600px){
-  .hd{padding:0 18px}
-  .hd-sub{display:none}
-  .cover-hero{width:136px;height:136px}
-  .cover-title{font-size:44px;letter-spacing:3px}
+  .cover-hero{width:132px;height:132px}
+  .cover-title{font-size:42px;letter-spacing:3px}
   .cover-sub{font-size:14px}
-  .setup{padding:80px 22px 56px}
-  .setup h1{font-size:34px}
-  .setup>p{font-size:15px}
-  .chat{padding:36px 20px 156px}
-  .st{font-size:23px}
-  .sh-ava{width:44px;height:44px}
-  .bub{max-width:88%;font-size:14.5px;padding:12px 15px}
-  .msg.archive .bub{padding:20px 20px}
-  .ia{padding:13px 16px}
+  .sheet{
+    left:0;right:0;top:auto;bottom:0;transform:none;
+    width:100%;border-radius:22px 22px 0 0;
+    animation:slideup .36s var(--ease);
+  }
+  .sheet.setup{max-height:92vh}
+  .sheet.chat{height:90vh}
+  @keyframes slideup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  /* 抽屉顶部小握把 */
+  .card-head::before{content:'';position:absolute;top:7px;left:50%;transform:translateX(-50%);width:38px;height:4px;border-radius:3px;background:var(--bd2)}
+  .card-head{position:relative;padding-top:18px}
+  .setup-body{padding:26px 22px 26px}
+  .setup-body h1{font-size:27px}
 }
 </style>
 </head>
 <body>
-<header class="hd">
-  <div class="logo"><img src="picture/mascot.png" alt="小钱钱">转念 · <em>小钱钱</em></div>
-  <div class="hd-sub">新晋管理者 · 一念之转</div>
-</header>
-<main class="main" id="app"></main>
+<!-- 背景场景：只渲染一次，永不重建（弹窗时只切换 .dim 实现虚化） -->
+<div class="bg" id="bg">
+  <div class="cover-glow"></div><div class="cover-glow g2"></div>
+  <div class="cover-box">
+    <img class="cover-hero" src="picture/mascot.png" alt="小钱钱">
+    <div class="cover-en">The Work · 一念之转</div>
+    <div class="cover-title">转念 · <em>小钱钱</em></div>
+    <div class="cover-sub">刚走上更大的位置，却比以前更累、更沉？<br>小钱钱陪你把那个压着你的念头，放下来看一看。<br>一次安静的对话 · 约 15–25 分钟 · 完全私密</div>
+    <button class="btn-enter" onclick="doEnter()">开始 <span class="mi">arrow_forward</span></button>
+  </div>
+</div>
+<!-- 弹出层：进入/退出时挂载一次，对话过程中只更新内部消息区 -->
+<div id="modalRoot"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -198,7 +220,6 @@ body{
 // API key 与系统提示词都不在前端。所有请求走 /api/chat（本地）或
 // /.netlify/functions/chat（线上），由后端持有密钥并注入提示词。
 const PRESET = {
-  // 飞书归档机器人 webhook（如需更换，改这里即可）
   feishu: 'https://open.feishu.cn/open-apis/bot/v2/hook/6c2e4765-9a7c-4f51-873e-64e985f8faa5',
 };
 
@@ -216,8 +237,8 @@ const S = {
 
 // ── API ───────────────────────────────────────────────────
 async function ask() {
-  // 本地与线上都先尝试 /api/chat，失败再退回 functions 路径
-  const payload = JSON.stringify({ name: S.name, messages: S.msgs });
+  const today = new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+  const payload = JSON.stringify({ name: S.name, date: today, messages: S.msgs });
   let resp = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -243,7 +264,7 @@ async function ask() {
 async function startConversation() {
   if (S.msgs.length) return;
   S.msgs.push({ role: 'user', content: KICKOFF });
-  S.busy = true; render();
+  S.busy = true; paintChat();
   try {
     const reply = await ask();
     S.msgs.push({ role: 'assistant', content: reply });
@@ -251,13 +272,13 @@ async function startConversation() {
     toast('接口错误：' + e.message);
     S.msgs = [];
   }
-  S.busy = false; render();
+  S.busy = false; paintChat();
 }
 
 async function userSays(text) {
   if (S.busy || S.done) return;
   S.msgs.push({ role: 'user', content: text });
-  S.busy = true; render();
+  S.busy = true; paintChat();
   try {
     const reply = await ask();
     S.msgs.push({ role: 'assistant', content: reply });
@@ -266,10 +287,9 @@ async function userSays(text) {
     toast('接口错误：' + e.message);
     S.msgs.pop();
   }
-  S.busy = false; render();
+  S.busy = false; paintChat();
 }
 
-// 识别 AI 是否已输出存档 / 收尾
 function isArchive(t) {
   if (!t) return false;
   return /带着它走/.test(t) || (/📌/.test(t) && /我今天带走的/.test(t));
@@ -277,12 +297,10 @@ function isArchive(t) {
 
 // ── ARCHIVE EXTRACT ───────────────────────────────────────
 function getArchiveText() {
-  // 取最后一条包含存档标记的助手消息
   for (let i = S.msgs.length - 1; i >= 0; i--) {
     const m = S.msgs[i];
     if (m.role === 'assistant' && /📌/.test(m.content)) return m.content.trim();
   }
-  // 退而求其次：整段对话
   return S.msgs.slice(1)
     .map(m => (m.role === 'user' ? '我：' : '小钱钱：') + m.content)
     .join('\n\n');
@@ -332,44 +350,63 @@ function fmt(t) {
   }).join('');
 }
 
-function render() {
-  const app = document.getElementById('app');
-  const hd = document.querySelector('.hd');
-  if (S.screen === 'cover') {
-    hd.style.display = 'none';
-    app.innerHTML = renderCover();
-  } else {
-    hd.style.display = '';
-    if (S.screen === 'setup') app.innerHTML = renderSetup();
-    else { app.innerHTML = renderChat(); maybeStart(); }
+// ── 卡片外壳：进入弹窗时只挂载一次 ─────────────────────────
+function mountModal() {
+  document.getElementById('bg').classList.add('dim');
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `<div class="backdrop" onclick="onBackdrop()"></div>
+    <div class="sheet" id="sheet">
+      <div class="card-head">
+        <div class="ch-id">
+          <img src="picture/mascot.png" alt="小钱钱">
+          <div>
+            <div class="ch-name">转念 · <em>小钱钱</em></div>
+            <div class="ch-sub">一念之转 · 完全私密</div>
+          </div>
+        </div>
+        <button class="ch-close" onclick="doClose()" title="收起"><span class="mi">close</span></button>
+      </div>
+      <div class="card-body" id="cardBody"></div>
+    </div>`;
+}
+
+function unmountModal() {
+  document.getElementById('bg').classList.remove('dim');
+  document.getElementById('modalRoot').innerHTML = '';
+}
+
+// ── 在已挂载的卡片里切换 setup / chat 视图 ────────────────
+function renderScreen() {
+  const sheet = document.getElementById('sheet');
+  const body  = document.getElementById('cardBody');
+  if (!sheet || !body) return;
+  sheet.className = 'sheet ' + S.screen;     // 仅切换尺寸类，不会重放弹出动画
+
+  if (S.screen === 'setup') {
+    body.innerHTML = setupBodyHtml();
+    setTimeout(() => document.getElementById('iName')?.focus(), 100);
+  } else if (S.screen === 'chat') {
+    // 只搭一次脚手架：滚动区 + 固定底部输入
+    body.innerHTML = `<div class="msgs" id="chatScroll"></div>`;
+    if (!document.getElementById('cardFoot')) {
+      sheet.insertAdjacentHTML('beforeend', `
+        <div class="card-foot" id="cardFoot"><div class="ic">
+          <textarea class="ci" id="ci" placeholder="把你心里真实的话说给小钱钱" rows="1" onkeydown="onKey(event)" oninput="autoH(this)"></textarea>
+          <button class="sb" id="sendBtn" onclick="doSend()"><span class="mi">send</span></button>
+        </div></div>`);
+    }
+    paintChat();
+    maybeStart();
   }
-  setTimeout(() => {
-    if (S.screen === 'chat') window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-  }, 80);
 }
 
-function renderCover() {
-  return `<div id="sCover">
-    <div class="cover-glow"></div><div class="cover-glow g2"></div>
-    <div class="cover-box">
-    <img class="cover-hero" src="picture/mascot.png" alt="小钱钱">
-    <div class="cover-en">The Work · 一念之转</div>
-    <div class="cover-title">转念 · <em>小钱钱</em></div>
-    <div class="cover-sub">刚走上更大的位置，却比以前更累、更沉？<br>小钱钱陪你把那个压着你的念头，放下来看一看。<br>一次安静的对话 · 约 15–25 分钟 · 完全私密</div>
-    <button class="btn-enter" onclick="doEnter()">开始 <span class="mi">arrow_forward</span></button>
-  </div></div>`;
-}
-
-function renderSetup() {
-  return `<div class="setup fi">
-    <img class="setup-hero" src="picture/mascot.png" alt="小钱钱">
+function setupBodyHtml() {
+  return `<div class="setup-body">
     <div class="eyebrow">转念 · 一念之转</div>
     <h1>把那个念头<br>放下来看看</h1>
     <p>你好，我是小钱钱。<br>我不解决问题，也不给建议。我只陪你看见那个让你沉的念头，然后陪你质疑它。<br>走的时候，你会带走一句自己说出来的话。</p>
-    <div class="fg">
-      <label class="fl">我可以怎么称呼你</label>
-      <input class="fi-input" id="iName" type="text" placeholder="输入你的名字或昵称" value="${esc(S.name)}" onkeydown="if(event.key==='Enter')doStart()">
-    </div>
+    <label class="fl">我可以怎么称呼你</label>
+    <input class="fi-input" id="iName" type="text" placeholder="输入你的名字或昵称" value="${esc(S.name)}" onkeydown="if(event.key==='Enter')doStart()">
     <button class="btn" onclick="doStart()">进入对话 <span class="mi">arrow_forward</span></button>
     <div class="adv-t" onclick="this.nextElementSibling.classList.toggle('open')"><span class="mi" style="font-size:16px">lock</span> 关于隐私与安全</div>
     <div class="adv-p">
@@ -383,53 +420,65 @@ function renderSetup() {
   </div>`;
 }
 
-function renderChat() {
-  const visible = S.msgs.slice(1);
-  const msgHtml = visible.map(m => {
-    const isU = m.role === 'user';
-    const isArc = !isU && /📌/.test(m.content);
-    const cls = isU ? 'u' : (isArc ? 'ai archive' : 'ai');
-    const avatar = isU
-      ? esc((S.name || '我').slice(0, 1))
-      : '<img src="picture/mascot.png" alt="小钱钱">';
-    return `<div class="msg ${cls}">
-      <div class="av">${avatar}</div>
-      <div class="bub">${fmt(m.content)}</div>
-    </div>`;
-  }).join('');
+// 单条消息 HTML（enter=true 时才带淡入动画，只给新追加的那条）
+function msgHtml(m, enter) {
+  const isU = m.role === 'user';
+  const isArc = !isU && /📌/.test(m.content);
+  const cls = (isU ? 'u' : (isArc ? 'ai archive' : 'ai')) + (enter ? ' enter' : '');
+  const avatar = isU
+    ? esc((S.name || '我').slice(0, 1))
+    : '<img src="picture/mascot.png" alt="小钱钱">';
+  return `<div class="msg ${cls}">
+    <div class="av">${avatar}</div>
+    <div class="bub">${fmt(m.content)}</div>
+  </div>`;
+}
 
-  const loading = S.busy
-    ? `<div class="msg ai"><div class="av"><img src="picture/mascot.png" alt="小钱钱"></div><div class="ld"><div class="ld-d"></div><div class="ld-d"></div><div class="ld-d"></div></div></div>`
-    : '';
+const loadingHtml = () =>
+  `<div class="msg ai enter transient"><div class="av"><img src="picture/mascot.png" alt="小钱钱"></div><div class="ld"><div class="ld-d"></div><div class="ld-d"></div><div class="ld-d"></div></div></div>`;
 
-  const endbar = S.done
-    ? `<div class="endbar fi">
-        <div class="ehint">这句话是你自己说出来的。<br>你可以把这份存档留住。</div>
-        <div class="act">
-          <button class="btn2" onclick="copyAll()"><span class="mi">content_copy</span> 复制存档</button>
-          <button class="btn3" onclick="sendFeishu()"><span class="mi">send</span> 发送到飞书</button>
-        </div>
-      </div>`
-    : '';
-
-  const inputArea = (!S.done && !S.busy)
-    ? `<div class="ia"><div class="ic">
-        <textarea class="ci" id="ci" placeholder="把你心里真实的话说给小钱钱" rows="1" onkeydown="onKey(event)" oninput="autoH(this)"></textarea>
-        <button class="sb" onclick="doSend()"><span class="mi">send</span></button>
-      </div></div>`
-    : '';
-
-  return `<div class="chat fi">
-    <div class="sh">
-      <img class="sh-ava" src="picture/mascot.png" alt="小钱钱">
-      <div>
-        <div class="st">${esc(S.name || '你')}，我在这里。</div>
-        <div class="sd2">不用整理，想到什么说什么。每次说一件就好，我会陪着你慢慢往里走。</div>
-      </div>
+const endbarHtml = () =>
+  `<div class="endbar transient">
+    <div class="ehint">这句话是你自己说出来的。<br>你可以把这份存档留住。</div>
+    <div class="act">
+      <button class="btn2" onclick="copyAll()"><span class="mi">content_copy</span> 复制存档</button>
+      <button class="btn3" onclick="sendFeishu()"><span class="mi">send</span> 发送到飞书</button>
     </div>
-    <div class="msgs">${msgHtml}${loading}</div>
-    ${endbar}
-  </div>${inputArea}`;
+  </div>`;
+
+// ── 增量更新消息区：只追加新气泡，背景/卡片/输入框都不动 ──
+function paintChat() {
+  const scroll = document.getElementById('chatScroll');
+  if (!scroll) return;
+
+  // 移除临时节点（加载点 / 存档操作栏），不影响已有消息
+  scroll.querySelectorAll('.transient').forEach(n => n.remove());
+
+  const visible = S.msgs.slice(1);
+  let present = scroll.querySelectorAll('.msg').length;
+
+  // 回滚（接口报错把刚加的用户气泡撤掉）：删除多出来的尾部消息
+  if (present > visible.length) {
+    const nodes = [...scroll.querySelectorAll('.msg')];
+    for (let i = visible.length; i < nodes.length; i++) nodes[i].remove();
+    present = visible.length;
+  }
+  // 追加新消息：只有最后一条带淡入动画
+  for (let i = present; i < visible.length; i++) {
+    scroll.insertAdjacentHTML('beforeend', msgHtml(visible[i], i === visible.length - 1));
+  }
+
+  if (S.busy) scroll.insertAdjacentHTML('beforeend', loadingHtml());
+  if (S.done) scroll.insertAdjacentHTML('beforeend', endbarHtml());
+
+  // 输入框：聊完后隐藏；忙碌时禁用发送
+  const foot = document.getElementById('cardFoot');
+  if (foot) foot.style.display = S.done ? 'none' : '';
+  const sb = document.getElementById('sendBtn');
+  if (sb) sb.disabled = S.busy;
+
+  const body = document.getElementById('cardBody');
+  if (body) requestAnimationFrame(() => { body.scrollTop = body.scrollHeight; });
 }
 
 // ── AUTO-START ────────────────────────────────────────────
@@ -438,14 +487,23 @@ function maybeStart() {
 }
 
 // ── EVENTS ────────────────────────────────────────────────
-window.doEnter = () => { S.screen = 'setup'; render(); };
+window.doEnter = () => {
+  mountModal();
+  // 已经聊过则直接回到对话，否则先填称呼
+  S.screen = (S.name && S.msgs.length) ? 'chat' : 'setup';
+  renderScreen();
+};
+
+window.doClose = () => { S.screen = 'cover'; unmountModal(); };
+
+window.onBackdrop = () => { if (S.screen === 'setup') doClose(); };
 
 window.doStart = () => {
   const name = (document.getElementById('iName')?.value || '').trim();
   if (!name) { toast('先告诉我怎么称呼你吧'); return; }
   S.name = name;
   S.screen = 'chat';
-  render();
+  renderScreen();
 };
 
 window.doSend = () => {
@@ -453,6 +511,7 @@ window.doSend = () => {
   const txt = (el?.value || '').trim();
   if (!txt || S.busy) return;
   el.value = '';
+  el.style.height = 'auto';
   userSays(txt);
 };
 
@@ -462,14 +521,16 @@ window.onKey = (e) => {
 
 window.autoH = (el) => {
   el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 };
 
 window.copyAll = copyAll;
 window.sendFeishu = sendFeishu;
 
-// ── INIT ──────────────────────────────────────────────────
-render();
+// Esc 收起卡片
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && S.screen !== 'cover') doClose();
+});
 </script>
 </body>
 </html>
