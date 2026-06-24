@@ -43,7 +43,11 @@ body{
 .logo{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;letter-spacing:.4px;color:var(--ink)}
 .logo img{width:30px;height:30px;object-fit:contain}
 .logo em{color:var(--accent);font-style:normal;font-weight:700}
+.hd-right{display:flex;align-items:center;gap:16px}
 .hd-sub{font-size:11px;font-weight:500;color:var(--t4);letter-spacing:1px}
+.hd-new{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;background:var(--bg2);color:var(--t2);border:1px solid var(--bd);border-radius:20px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s var(--ease)}
+.hd-new:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.hd-new .mi{font-size:16px}
 
 /* Main */
 .main{padding-top:60px;min-height:100vh}
@@ -189,7 +193,10 @@ body{
 <body>
 <header class="hd">
   <div class="logo"><img src="picture/mascot.png" alt="小钱钱">转念 · <em>小钱钱</em></div>
-  <div class="hd-sub">新晋管理者 · 一念之转</div>
+  <div class="hd-right">
+    <span class="hd-sub">新晋管理者 · 一念之转</span>
+    <button class="hd-new" onclick="newSession()" title="清空当前对话，重新开始"><span class="mi">add_comment</span>新对话</button>
+  </div>
 </header>
 <main class="main" id="app"></main>
 <div class="toast" id="toast"></div>
@@ -217,6 +224,28 @@ const S = {
   busy: false,
   done: false,
 };
+
+// ── 本地存档：把对话存进浏览器，重开网页可继续 ──────────────
+const SKEY = 'zhuannian_xqq_session_v1';
+function persist() {
+  try {
+    localStorage.setItem(SKEY, JSON.stringify({ name: S.name, msgs: S.msgs, done: S.done }));
+  } catch (_) { /* 隐私模式等可能不可用，忽略 */ }
+}
+function restore() {
+  try {
+    const raw = localStorage.getItem(SKEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (!d || !Array.isArray(d.msgs) || d.msgs.length < 2) return false; // 至少有开场白才算有效会话
+    S.name = d.name || '';
+    S.msgs = d.msgs;
+    S.done = !!d.done;
+    S.screen = 'chat';
+    if (S.done) _reported = true;   // 旧会话已存过档，避免重开时再次上报飞书
+    return true;
+  } catch (_) { return false; }
+}
 
 // ── API ───────────────────────────────────────────────────
 async function ask() {
@@ -255,7 +284,7 @@ async function startConversation() {
     toast('接口错误：' + e.message);
     S.msgs = [];
   }
-  S.busy = false; paintChat();
+  S.busy = false; paintChat(); persist();
 }
 
 async function userSays(text) {
@@ -270,7 +299,7 @@ async function userSays(text) {
     toast('接口错误：' + e.message);
     S.msgs.pop();
   }
-  S.busy = false; paintChat();
+  S.busy = false; paintChat(); persist();
 }
 
 function isArchive(t) {
@@ -508,7 +537,18 @@ window.autoH = (el) => {
 
 window.copyAll = copyAll;
 
+// 开始一段新对话：清掉本地存档，回到封面
+window.newSession = () => {
+  if (S.msgs.length && !confirm('开始新的对话？当前这次会被清空。')) return;
+  try { localStorage.removeItem(SKEY); } catch (_) {}
+  S.screen = 'cover'; S.name = ''; S.msgs = []; S.busy = false; S.done = false;
+  _reported = false;
+  render();
+};
+
 // ── INIT ──────────────────────────────────────────────────
+// 有本地存档就直接恢复到对话，否则正常从封面开始
+restore();
 render();
 </script>
 </body>
