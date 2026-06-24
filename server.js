@@ -6,7 +6,8 @@ const http = require('http');
 const fs   = require('fs');
 const path = require('path');
 const url  = require('url');
-const { buildSystemPrompt } = require('./systemPrompt.js');
+const { Readable } = require('stream');
+const { buildSystemMessages } = require('./systemPrompt.js');
 
 // ── 加载同目录下的 .env（无依赖，简易实现） ──────────────
 (function loadEnv() {
@@ -72,8 +73,9 @@ async function handleChat(req, res) {
     return res.end('Missing messages');
   }
 
+  // 静态提示词在前（可被缓存的固定前缀），姓名/日期紧随其后
   const fullMessages = [
-    { role: 'system', content: buildSystemPrompt(name, date) },
+    ...buildSystemMessages(name, date),
     ...messages,
   ];
 
@@ -95,11 +97,23 @@ async function handleChat(req, res) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ model, max_tokens: 2048, temperature: 0.7, messages: fullMessages }),
+      body: JSON.stringify({ model, max_tokens: 700, temperature: 0.7, stream: true, messages: fullMessages }),
     });
-    const data = await upstream.json();
-    res.writeHead(upstream.status, { ...cors(), 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(data));
+
+    if (!upstream.ok || !upstream.body) {
+      const t = await upstream.text().catch(() => '');
+      res.writeHead(upstream.status || 500, { ...cors(), 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: { message: `上游错误 ${upstream.status}: ${t.slice(0, 200)}` } }));
+    }
+
+    // 把 DeepSeek 的 SSE 流原样转发给前端
+    res.writeHead(200, {
+      ...cors(),
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+    Readable.fromWeb(upstream.body).pipe(res);
   } catch (e) {
     res.writeHead(500, { ...cors(), 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: { message: e.message } }));

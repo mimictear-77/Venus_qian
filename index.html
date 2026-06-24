@@ -247,29 +247,81 @@ function restore() {
   } catch (_) { return false; }
 }
 
-// ── API ───────────────────────────────────────────────────
-async function ask() {
+// ── API（流式）──────────────────────────────────────────────
+// onDelta(增量, 累计) 会在每个 token 到达时被调用；返回完整回复文本。
+async function ask(onDelta) {
   const today = new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
   const payload = JSON.stringify({ name: S.name, date: today, messages: S.msgs });
-  let resp = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: payload,
-  }).catch(() => null);
 
+  // 首字超时看门狗：30 秒内没拿到任何内容就中断，给出友好提示
+  const ctrl = new AbortController();
+  let gotFirst = false;
+  const watchdog = setTimeout(() => { if (!gotFirst) ctrl.abort(); }, 30000);
+
+  const opts = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, signal: ctrl.signal };
+  let resp = await fetch('/api/chat', opts).catch(() => null);
   if (!resp || resp.status === 404) {
-    resp = await fetch('/.netlify/functions/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: payload,
-    });
+    resp = await fetch('/.netlify/functions/chat', opts).catch(() => null);
   }
+  if (!resp) { clearTimeout(watchdog); throw new Error('网络繁忙，请稍后再试'); }
   if (!resp.ok) {
+    clearTimeout(watchdog);
     const e = await resp.json().catch(() => ({}));
     throw new Error(e.error?.message || `HTTP ${resp.status}`);
   }
-  const data = await resp.json();
-  return data.choices[0].message.content;
+
+  try {
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '', full = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let nl;
+      while ((nl = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, nl).trim();
+        buf = buf.slice(nl + 1);
+        if (!line.startsWith('data:')) continue;
+        const data = line.slice(5).trim();
+        if (data === '[DONE]') { clearTimeout(watchdog); return full; }
+        try {
+          const j = JSON.parse(data);
+          if (j.error) throw new Error(j.error.message || '接口返回错误');
+          const delta = j.choices?.[0]?.delta?.content || '';
+          if (delta) {
+            if (!gotFirst) { gotFirst = true; clearTimeout(watchdog); }
+            full += delta;
+            onDelta && onDelta(delta, full);
+          }
+        } catch (err) { if (/接口返回错误/.test(err.message)) throw err; }
+      }
+    }
+    clearTimeout(watchdog);
+    return full;
+  } catch (e) {
+    clearTimeout(watchdog);
+    if (e.name === 'AbortError') throw new Error('响应太慢了，可能是同时使用的人较多，请稍后再试一次');
+    throw e;
+  }
+}
+
+// 流式填充最后一条助手气泡的内容
+function updateLastBubble(text) {
+  const msgs = document.getElementById('msgs');
+  if (!msgs) return;
+  const bub = msgs.querySelector('.msg:last-child .bub');
+  if (bub) bub.innerHTML = fmt(text);
+  requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight }));
+}
+
+// 流式结束后：若最后一条是存档（含📌），补上存档样式（流式开始时气泡还是空的，拿不到这个判断）
+function finalizeLastBubble() {
+  const msgs = document.getElementById('msgs');
+  if (!msgs) return;
+  const node = msgs.querySelector('.msg:last-child');
+  const m = S.msgs[S.msgs.length - 1];
+  if (node && m && m.role === 'assistant' && /📌/.test(m.content)) node.classList.add('archive');
 }
 
 // ── CONVERSATION ──────────────────────────────────────────
@@ -277,9 +329,14 @@ async function startConversation() {
   if (S.msgs.length) return;
   S.msgs.push({ role: 'user', content: KICKOFF });
   S.busy = true; paintChat();
+  let idx = -1;
   try {
-    const reply = await ask();
-    S.msgs.push({ role: 'assistant', content: reply });
+    await ask((delta, full) => {
+      if (idx < 0) { idx = S.msgs.push({ role: 'assistant', content: '' }) - 1; S.busy = false; paintChat(); }
+      S.msgs[idx].content = full;
+      updateLastBubble(full);
+    });
+    if (idx < 0) throw new Error('没有收到回复');
   } catch (e) {
     toast('接口错误：' + e.message);
     S.msgs = [];
@@ -291,13 +348,21 @@ async function userSays(text) {
   if (S.busy || S.done) return;
   S.msgs.push({ role: 'user', content: text });
   S.busy = true; paintChat();
+  let idx = -1;
   try {
-    const reply = await ask();
-    S.msgs.push({ role: 'assistant', content: reply });
+    await ask((delta, full) => {
+      if (idx < 0) { idx = S.msgs.push({ role: 'assistant', content: '' }) - 1; S.busy = false; paintChat(); }
+      S.msgs[idx].content = full;
+      updateLastBubble(full);
+    });
+    if (idx < 0) throw new Error('没有收到回复');
+    const reply = S.msgs[idx].content;
+    finalizeLastBubble();
     if (isArchive(reply)) { S.done = true; reportFeishu(); }
   } catch (e) {
     toast('接口错误：' + e.message);
-    S.msgs.pop();
+    if (idx >= 0) S.msgs.splice(idx, 1);   // 移除未完成的助手气泡
+    S.msgs.pop();                          // 回滚刚才的用户输入
   }
   S.busy = false; paintChat(); persist();
 }

@@ -62,17 +62,13 @@ async function simulate(name, personaDesc){
 }
 
 (async()=>{
-  const scenarios = [
-    ['老周','升任总监半年，团队翻倍。每天从早到晚连轴转，回到家像被掏空，什么都不想做，周末也缓不过来。不是某件具体的事，就是整个人的能量见底了，撑不下去的感觉。'],
-    ['Lina','空降到大厂当产品经理，团队里好几个资深下属。她总怕自己不够好、迟早被看穿，每个决定都反复确认，怕出错被人发现"其实她不行"，有强烈的冒名顶替感。'],
-    ['大磊','刚当上业务负责人。手机一天到晚响，谁都能找他、什么都得他拍板，永远在救火，根本没有自己的时间，连吃饭睡觉都被打断，完全无法拒绝任何人。'],
-  ];
+  const scenarios = [['阿强','刚升项目经理，带一个跨部门项目，团队里没人愿意配合，事事都要他亲自盯，觉得为什么所有压力都压在我们团队身上，特别委屈和无力。']];
   for(const [name,desc] of scenarios){
     const t = await simulate(name,desc);
     let out = `\n\n========== 对话：${name} ==========\n（${desc}）\n\n`;
     out += t.map(([who,txt])=>`【${who}】${txt}`).join('\n\n');
-    fs.appendFileSync(path.join(__dirname,'_sim_out4.txt'), out, 'utf8');
+    fs.appendFileSync(path.join(__dirname,'_sim_out7.txt'), out, 'utf8');
     console.log(`完成：${name}（${t.length} 条）`);
   }
-  console.log('全部完成 → _sim_out.txt');
+  console.log('全部完成 → _sim_out7.txt');
 })().catch(e=>{console.error('ERR',e);process.exit(1);});
